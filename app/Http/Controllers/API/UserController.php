@@ -9,6 +9,7 @@ use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Validator;
 use Laravel\Fortify\Rules\Password;
 
 class UserController extends Controller
@@ -82,5 +83,43 @@ class UserController extends Controller
                 'error' => $error,
             ], "Authentication Failed", 500);
         }
+    }
+
+    public function fetch(Request $request) 
+    {
+        return ResponseFormatter::success($request->user(), "Data profile user berhasil diambil");
+    }
+
+    public function updateProfile(Request $request) 
+    {
+        $rules = [
+            'name' => ['required', 'string', 'max:255'],
+            'username' => ['required', 'string', 'max:255', 'unique:users'],
+            'email' => ['required', 'string', 'email', 'max:255', 'unique:users'],
+            'phone' => ['requ
+            ired', 'string', 'max:255'],
+        ];
+
+        $validator = Validator::make($request->all(), $rules);
+         
+        if($validator->fails()){
+            return ResponseFormatter::error([
+                'message' => "Something went wrong",
+                'error' => $validator->errors(),
+            ], "Update Profile Failed", 500);
+        }
+
+        $data = $request->all();
+        
+        $user = Auth::user();
+        $user->update($data);
+
+        return ResponseFormatter::success($user, "Profile updated");
+    }
+
+    public function logout(Request $request) 
+    {
+        $token = $request->user()->currentAccessToken()->delete();
+        return ResponseFormatter::success($token, "Token Revoked");
     }
 }
